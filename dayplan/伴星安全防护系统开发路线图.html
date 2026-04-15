@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head><meta content="default-src 'none'; style-src * 'unsafe-inline'; script-src * 'unsafe-inline'; img-src * data: blob:; font-src * data:; media-src * data: blob:; connect-src 'none'; form-action 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'" http-equiv="Content-Security-Policy"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>伴星安全防护系统 (BanSafe) 开发路线图 | 28周57项任务</title>
+<script src="https://image.uc.cn/s/uae/g/3n/mos-production/0915/3.4.17.js"></script>
+<script src="https://image.uc.cn/s/uae/g/3n/mos-production/fontawesome-free-7.1.0-web/js/all.min.js"></script>
+<script src="https://image.uc.cn/s/uae/g/3n/mos-production/0915/echarts.min.js"></script>
+<style>
+        /* 自定义CSS，使用BEM命名法避免冲突 */
+        .timeline {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .timeline::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            background-color: #e5e7eb;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            margin-left: -3px;
+        }
+        .timeline__item {
+            padding: 10px 40px;
+            position: relative;
+            width: 50%;
+            box-sizing: border-box;
+        }
+        .timeline__item--left {
+            left: 0;
+        }
+        .timeline__item--right {
+            left: 50%;
+        }
+        .timeline__content {
+            padding: 20px 30px;
+            background-color: white;
+            position: relative;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+        .timeline__content:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+        .timeline__item--right .timeline__content {
+            text-align: left;
+        }
+        .timeline__item--left .timeline__content {
+            text-align: right;
+        }
+        .timeline__circle {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            right: -10px;
+            background-color: #3b82f6;
+            border: 4px solid white;
+            border-radius: 50%;
+            z-index: 1;
+            top: 15px;
+        }
+        .timeline__item--right .timeline__circle {
+            left: -10px;
+        }
+        /* 响应式调整 */
+        @media screen and (max-width: 768px) {
+            .timeline::after {
+                left: 31px;
+            }
+            .timeline__item {
+                width: 100%;
+                padding-left: 70px;
+                padding-right: 25px;
+            }
+            .timeline__item--right {
+                left: 0%;
+            }
+            .timeline__item--right .timeline__circle,
+            .timeline__item--left .timeline__circle {
+                left: 21px;
+            }
+            .timeline__item--right .timeline__content,
+            .timeline__item--left .timeline__content {
+                text-align: left;
+            }
+        }
+        .task-detail-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+        .task-detail-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .close-modal:hover {
+            color: #000;
+        }
+        .stage-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: white;
+        }
+        .phase-p0 { background-color: #8b5cf6; }
+        .phase-p1 { background-color: #10b981; }
+        .phase-p2 { background-color: #f59e0b; }
+        .phase-p3 { background-color: #3b82f6; }
+        .phase-p4 { background-color: #ef4444; }
+        .phase-p5 { background-color: #ec4899; }
+        .phase-p6 { background-color: #6366f1; }
+    </style>
+<script>
+!(function(j,a,g){j.__itrace_conf = {bid: 'kt40h0wl-koyh4af8',rel: '', uid: '82bb18b3-c6b2-4df1-822e-7ac41b42c283' ,  spa: true, plugins:['jserror','interface','perf','resource','flow','blank']};var b = a.createElement("script");var d = a.getElementsByTagName("script")[0];b.type = "text/javascript";b.crossorigin = true;b.async = true;b.onload = function(){j.__itrace && j.__itrace.setReady()};d.parentNode.insertBefore(b,d);b.src = g})(window, document, "https://g.alicdn.com/woodpeckerx/itrace-next/itrace.iife.js")
+</script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+<header class="bg-gradient-to-r from-blue-900 via-indigo-800 to-purple-800 text-white py-12 px-4 shadow-xl">
+<div class="container mx-auto max-w-6xl">
+<h1 class="text-4xl md:text-5xl font-bold mb-4"><i class="fas fa-shield-alt mr-4"></i>伴星安全防护系统 (BanSafe) 开发路线图</h1>
+<p class="text-xl text-blue-100 mb-2">专为单开发者与AI智能体协作优化 | 28周周期 | 57项可执行任务</p>
+<div class="flex flex-wrap items-center gap-4 mt-6 text-sm">
+<div class="bg-white/20 px-4 py-2 rounded-full"><i class="fas fa-calendar-alt mr-2"></i>总周期: <strong>28周</strong> (约196天)</div>
+<div class="bg-white/20 px-4 py-2 rounded-full"><i class="fas fa-tasks mr-2"></i>任务总数: <strong>57项</strong></div>
+<div class="bg-white/20 px-4 py-2 rounded-full"><i class="fas fa-user mr-2"></i>开发模式: <strong>单开发者 + AI协同 (L1/L2)</strong></div>
+<div class="bg-white/20 px-4 py-2 rounded-full"><i class="fas fa-rocket mr-2"></i>当前日期: <strong>2026-04-15 (星期三)</strong></div>
+</div>
+</div>
+</header>
+
+<main class="container mx-auto max-w-6xl py-8 px-4">
+
+<section class="mb-12 bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-lg p-8 border border-blue-100">
+<h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center"><i class="fas fa-chart-bar text-blue-600 mr-3"></i>总体概览与协作范式</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div>
+<h3 class="text-xl font-semibold text-gray-700 mb-4">项目核心信息</h3>
+<ul class="space-y-3">
+<li class="flex"><i class="fas fa-cube text-green-500 mt-1 mr-3"></i> <span class="font-medium">项目名称:</span> <span class="ml-2">伴星安全防护系统 (BanSafe)</span></li>
+<li class="flex"><i class="fas fa-history text-purple-500 mt-1 mr-3"></i> <span class="font-medium">平均任务时长:</span> <span class="ml-2">~3.44天</span></li>
+<li class="flex"><i class="fas fa-users text-pink-500 mt-1 mr-3"></i> <span class="font-medium">协作理念:</span> <span class="ml-2">开发者为“编排者”，AI为“增强者”</span></li>
+<li class="flex"><i class="fas fa-book text-orange-500 mt-1 mr-3"></i> <span class="font-medium">依据文档:</span> <span class="ml-2">BanSafe_Specification_v0.3.md</span></li>
+</ul>
+</div>
+<div>
+<h3 class="text-xl font-semibold text-gray-700 mb-4">关键协作范式</h3>
+<ul class="space-y-3">
+<li class="flex"><i class="fas fa-project-diagram text-blue-500 mt-1 mr-3"></i> <span class="font-medium">计划-执行分离</span> <sup><a class="text-blue-600 hover:underline" href="https://cloud.tencent.com/developer/article/2645181" title="一人公司的AI workflow：一位开发者的计划-执行分离心法">[2]</a></sup></li>
+<li class="flex"><i class="fas fa-clock text-teal-500 mt-1 mr-3"></i> <span class="font-medium">批处理番茄钟流水线</span> <sup><a class="text-blue-600 hover:underline" href="https://blog.csdn.net/aji_02141204/article/details/159797642" title="为什么 90% 的人用 AI 写代码效率提升并不明显？这套番茄钟流水线，帮你把有效产出拉满">[3]</a></sup></li>
+<li class="flex"><i class="fas fa-robot text-red-500 mt-1 mr-3"></i> <span class="font-medium">Actor-Critic双智能体审查</span> <sup><a class="text-blue-600 hover:underline" href="https://blog.csdn.net/2509_92116069/article/details/158097968" title="AI驱动的多智能体协作模式:Actor-Critic在软件开发中的应用">[4]</a></sup></li>
+<li class="flex"><i class="fas fa-tools text-yellow-600 mt-1 mr-3"></i> <span class="font-medium">最小工作单位原则</span> <sup><a class="text-blue-600 hover:underline" href="https://blog.csdn.net/lez1021/article/details/159689291" title="【AI协作开发实践指南：从25%到50%+效率提升的实战方法论】">[5]</a></sup></li>
+</ul>
+</div>
+</div>
+</section>
+
+<section class="mb-12 bg-white rounded-2xl shadow-lg p-6 md:p-8">
+<h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center"><i class="fas fa-chart-pie text-indigo-600 mr-3"></i>开发阶段划分与任务分布</h2>
+<p class="text-gray-600 mb-8">根据MVP阶段定义与单人开发可行性，将全周期划分为七个主要阶段，每个阶段有明确的任务数和交付物。</p>
+<div class="h-80 w-full" id="phaseChart"></div>
+<div class="mt-8 overflow-x-auto">
+<table class="min-w-full divide-y divide-gray-200 shadow-sm border border-gray-200">
+<thead class="bg-gray-100">
+<tr>
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">阶段</th>
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">名称</th>
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">周期（周）</th>
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">任务数</th>
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">平均任务时长（天）</th>
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">主要交付物</th>
+</tr>
+</thead>
+<tbody class="bg-white divide-y divide-gray-200">
+<tr class="hover:bg-blue-50"><td class="px-4 py-3 font-bold">P0</td><td class="px-4 py-3">硬件选型验证</td><td class="px-4 py-3">2</td><td class="px-4 py-3">4</td><td class="px-4 py-3">3.5</td><td class="px-4 py-3">原理图、BOM表</td></tr>
+<tr class="hover:bg-green-50"><td class="px-4 py-3 font-bold">P1</td><td class="px-4 py-3">基础驱动开发</td><td class="px-4 py-3">4</td><td class="px-4 py-3">8</td><td class="px-4 py-3">3.5</td><td class="px-4 py-3">I2C/I2S/DCMI驱动</td></tr>
+<tr class="hover:bg-yellow-50"><td class="px-4 py-3 font-bold">P2</td><td class="px-4 py-3">三重判定引擎</td><td class="px-4 py-3">6</td><td class="px-4 py-3">18</td><td class="px-4 py-3">2.33</td><td class="px-4 py-3">姿态+音频+视觉模型</td></tr>
+<tr class="hover:bg-blue-50"><td class="px-4 py-3 font-bold">P3</td><td class="px-4 py-3">通信与定位系统</td><td class="px-4 py-3">4</td><td class="px-4 py-3">9</td><td class="px-4 py-3">3.11</td><td class="px-4 py-3">BLE+4G+定位算法</td></tr>
+<tr class="hover:bg-red-50"><td class="px-4 py-3 font-bold">P4</td><td class="px-4 py-3">云端服务开发</td><td class="px-4 py-3">4</td><td class="px-4 py-3">8</td><td class="px-4 py-3">3.5</td><td class="px-4 py-3">API + 数据库</td></tr>
+<tr class="hover:bg-pink-50"><td class="px-4 py-3 font-bold">P5</td><td class="px-4 py-3">移动端应用开发</td><td class="px-4 py-3">4</td><td class="px-4 py-3">8</td><td class="px-4 py-3">3.5</td><td class="px-4 py-3">老师/家长APP</td></tr>
+<tr class="hover:bg-indigo-50"><td class="px-4 py-3 font-bold">P6</td><td class="px-4 py-3">系统联调测试</td><td class="px-4 py-3">4</td><td class="px-4 py-3">2</td><td class="px-4 py-3">14.0</td><td class="px-4 py-3">完整系统</td></tr>
+<tr class="bg-gray-100 font-bold"><td class="px-4 py-3">总计</td><td class="px-4 py-3">—</td><td class="px-4 py-3">28</td><td class="px-4 py-3">57</td><td class="px-4 py-3">—</td><td class="px-4 py-3">—</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="mb-12 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-lg p-6 md:p-8">
+<h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center"><i class="fas fa-stream text-amber-600 mr-3"></i>57项详细任务时间线 (点击查看详情)</h2>
+<p class="text-gray-700 mb-8">下方展示了全部57项任务在28周周期内的分布。每个卡片代表一项任务，<strong>点击卡片</strong>可以查看该任务的详细目标、行动步骤、所需资源和具体时间安排。</p>
+
+<div class="timeline">
+
+</div>
+</section>
+
+<section class="mb-12 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl shadow-lg p-6 md:p-8">
+<h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center"><i class="fas fa-handshake text-emerald-600 mr-3"></i>单开发者+AI协作执行建议</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="bg-white p-6 rounded-xl shadow-md border border-emerald-100">
+<div class="text-emerald-600 text-3xl mb-4"><i class="fas fa-user-tie"></i></div>
+<h3 class="font-bold text-lg mb-2">角色分工</h3>
+<p class="text-gray-700 text-sm"><strong>开发者</strong>：战略、架构、质量把控、最终审核 <sup><a class="text-emerald-600 hover:underline" href="https://blog.csdn.net/qhvssonic/article/details/156801103" title="一人公司10天完成双平台App：我与AI协同开发的方法论">[1]</a></sup>。<br/><strong>AI</strong>：代码生成、文档、测试、重复性任务 <sup><a class="text-emerald-600 hover:underline" href="https://blog.csdn.net/2609_95039349/article/details/159352842" title="AI 辅助编程革命：如何利用 GitHub Copilot 等工具重塑开发效率">[6]</a></sup>。</p>
+</div>
+<div class="bg-white p-6 rounded-xl shadow-md border border-blue-100">
+<div class="text-blue-600 text-3xl mb-4"><i class="fas fa-toolbox"></i></div>
+<h3 class="font-bold text-lg mb-2">工具链推荐</h3>
+<ul class="text-gray-700 text-sm space-y-1">
+<li><i class="fas fa-code text-blue-400 mr-2"></i>AI平台: Copilot <sup><a class="text-blue-600 hover:underline" href="https://visualstudio.microsoft.com/zh-hans/github-copilot/" title="使用 GitHub Copilot Visual Studio - AI 结对编程">[7]</a></sup>, CodeBuddy <sup><a class="text-blue-600 hover:underline" href="https://blog.csdn.net/qq_43584113/article/details/160151442" title="【AI编程工具】腾讯云CodeBuddy：从代码补全到全栈开发的AI编程革命">[8]</a></sup></li>
+<li><i class="fas fa-tasks text-green-400 mr-2"></i>项目管理: Notion, Trello <sup><a class="text-blue-600 hover:underline" href="https://docs.pingcode.com/baike/5226188" title="日常工作用什么团队协作软件比较好：9款高频使用工具推荐">[10]</a></sup></li>
+<li><i class="fas fa-code-branch text-purple-400 mr-2"></i>版本控制: Git + GitHub <sup><a class="text-blue-600 hover:underline" href="https://blog.csdn.net/zhyongrui/article/details/156302640" title="用于长期运行 Agent 的高效运行框架">[11]</a></sup></li>
+</ul>
+</div>
+<div class="bg-white p-6 rounded-xl shadow-md border border-red-100">
+<div class="text-red-600 text-3xl mb-4"><i class="fas fa-piggy-bank"></i></div>
+<h3 class="font-bold text-lg mb-2">成本优化策略</h3>
+<ul class="text-gray-700 text-sm space-y-1">
+<li><i class="fas fa-brain text-red-400 mr-2"></i>日常用轻量模型 (如Claude Haiku)</li>
+<li><i class="fas fa-sync-alt text-red-400 mr-2"></i>复杂重构时启用高性能模型</li>
+<li><i class="fas fa-filter text-red-400 mr-2"></i>使用`.claudeignore`减少Token消耗 <sup><a class="text-red-600 hover:underline" href="https://www.toutiao.com/a1862333127484416/" title="AI 圈近期最火的就是 Hermes Agent...成本控制、实操技巧">[12]</a></sup></li>
+</ul>
+</div>
+<div class="bg-white p-6 rounded-xl shadow-md border border-purple-100">
+<div class="text-purple-600 text-3xl mb-4"><i class="fas fa-award"></i></div>
+<h3 class="font-bold text-lg mb-2">质量保障机制</h3>
+<ul class="text-gray-700 text-sm space-y-1">
+<li><i class="fas fa-vial text-purple-400 mr-2"></i>测试驱动开发 (TDD) <sup><a class="text-purple-600 hover:underline" href="https://blog.csdn.net/weixin_46389691/article/details/160061775" title="Superpowers —— 让 AI 编程代理具备工程化开发能力">[13]</a></sup></li>
+<li><i class="fas fa-search text-purple-400 mr-2"></i>强制代码审查 (专用Agent)</li>
+<li><i class="fas fa-infinity text-purple-400 mr-2"></i>自动化验证闭环 <sup><a class="text-purple-600 hover:underline" href="https://juejin.cn/post/7626564822860070952" title="复刻字节 AI 开发流：实践 Node.js 通用脚手架揭秘字节内部 AI 开发流">[14]</a></sup></li>
+</ul>
+</div>
+</div>
+</section>
+
+<div class="task-detail-modal" id="taskDetailModal">
+<div class="task-detail-content">
+<span class="close-modal">×</span>
+<h2 class="text-2xl font-bold mb-2 text-gray-800" id="modalTaskTitle"></h2>
+<div class="mb-6 text-sm text-gray-600" id="modalTaskMeta"></div>
+<div class="space-y-6">
+<div>
+<h3 class="text-lg font-semibold text-gray-700 mb-2 flex items-center"><i class="fas fa-bullseye text-blue-500 mr-2"></i>目标</h3>
+<p class="text-gray-800 bg-blue-50 p-4 rounded-lg" id="modalTaskGoal"></p>
+</div>
+<div>
+<h3 class="text-lg font-semibold text-gray-700 mb-2 flex items-center"><i class="fas fa-walking text-green-500 mr-2"></i>行动步骤</h3>
+<div class="text-gray-800 bg-green-50 p-4 rounded-lg" id="modalTaskSteps"></div>
+</div>
+<div>
+<h3 class="text-lg font-semibold text-gray-700 mb-2 flex items-center"><i class="fas fa-boxes text-yellow-500 mr-2"></i>所需资源</h3>
+<p class="text-gray-800 bg-yellow-50 p-4 rounded-lg" id="modalTaskResources"></p>
+</div>
+<div>
+<h3 class="text-lg font-semibold text-gray-700 mb-2 flex items-center"><i class="fas fa-calendar-day text-red-500 mr-2"></i>时间安排</h3>
+<p class="text-gray-800 bg-red-50 p-4 rounded-lg font-medium" id="modalTaskSchedule"></p>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+<footer class="bg-gray-900 text-gray-300 py-8 px-4">
+<div class="container mx-auto max-w-6xl text-center">
+<p class="mb-4">本内容由AI生成，可能存在错误或不准确之处。请在使用前自行核实信息的准确性。</p>
+<p class="text-sm">开发路线图基于《BanSafe_Specification_v0.3.md》及单开发者+AI协作最佳实践生成，最后更新于2026-04-15。</p>
+<div class="mt-6 pt-6 border-t border-gray-700 text-xs text-gray-500">
+                参考链接：
+                <a class="hover:text-white mx-1" href="https://blog.csdn.net/qhvssonic/article/details/156801103">[1]</a>
+<a class="hover:text-white mx-1" href="https://cloud.tencent.com/developer/article/2645181">[2]</a>
+<a class="hover:text-white mx-1" href="https://blog.csdn.net/aji_02141204/article/details/159797642">[3]</a>
+<a class="hover:text-white mx-1" href="https://blog.csdn.net/2509_92116069/article/details/158097968">[4]</a>
+<a class="hover:text-white mx-1" href="https://blog.csdn.net/lez1021/article/details/159689291">[5]</a>
+<a class="hover:text-white mx-1" href="https://blog.csdn.net/2609_95039349/article/details/159352842">[6]</a>
+<a class="hover:text-white mx-1" href="https://visualstudio.microsoft.com/zh-hans/github-copilot/">[7]</a>
+<a class="hover:text-white mx-1" href="https://blog.csdn.net/qq_43584113/article/details/160151442">[8]</a>
+<a class="hover:text-white mx-1" href="https://segmentfault.com/a/1190000047693491">[9]</a>
+<a class="hover:text-white mx-1" href="https://docs.pingcode.com/baike/5226188">[10]</a>
+<a class="hover:text-white mx-1" href="https://blog.csdn.net/zhyongrui/article/details/156302640">[11]</a>
+<a class="hover:text-white mx-1" href="https://www.toutiao.com/a1862333127484416/">[12]</a>
+<a class="hover:text-white mx-1" href="https://blog.csdn.net/weixin_46389691/article/details/160061775">[13]</a>
+<a class="hover:text-white mx-1" href="https://juejin.cn/post/7626564822860070952">[14]</a>
+</div>
+</div>
+</footer>
+<script>
+        // 任务数据 - 直接从参考文章提取
+        const allTasks = [
+            {id:1, phase:'P0', goal:'确认主控芯片及存储配置', steps:'1. 查阅ESP32-S3-WROOM-1规格书；2. 确认SRAM/PSRAM/Flash容量满足Tensor Arena需求；3. 文档归档至hardware_specs.md', resources:'BanSafe_Specification_v0.3.md, ESP32-S3技术手册', schedule:'第1周 第1天'},
+            {id:2, phase:'P0', goal:'完成姿态传感器(QMA7981)选型验证', steps:'1. 核对I2C接口参数(400kHz)；2. 验证中断引脚(GPIO07)连接方式；3. 编写初始化测试代码框架', resources:'BanSafe_Specification_v0.3.md, QMA7981数据手册', schedule:'第1周 第2天'},
+            {id:3, phase:'P0', goal:'完成麦克风(INMP441×2)与摄像头(OV2640)选型确认', steps:'1. 验证I2S与DCMI引脚分配无冲突；2. 确认采样率(16kHz)与帧率(VGA@15fps)符合要求；3. 创建sensor_validation_checklist.md', resources:'BanSafe_Specification_v0.3.md, INMP441/OV2640规格书', schedule:'第1周 第3天'},
+            {id:4, phase:'P0', goal:'完成4G模块(EC200U)与气压计(BMP388)硬件整合设计', steps:'1. 确认UART1(GPIO17/18)与PWRKEY(GPIO47)接线方案；2. 绘制初步硬件连接草图；3. 提交原理图草案', resources:'BanSafe_Specification_v0.3.md, EC200U硬件设计指南', schedule:'第1周 第4-5天'},
+            {id:5, phase:'P1', goal:'实现I2C驱动并读取QMA7981基础数据', steps:'1. 使用ESP-IDF I2C Driver初始化总线；2. 读取设备ID寄存器；3. 输出原始加速度值至串口', resources:'ESP-IDF, ESP32-S3开发板, QMA7981模块', schedule:'第2周 第1-2天'},
+            {id:6, phase:'P1', goal:'实现BMP388气压计I2C通信', steps:'1. 配置I2C地址与测量模式；2. 获取当前大气压与温度；3. 集成至同一I2C总线上', resources:'同上', schedule:'第2周 第3-4天'},
+            {id:7, phase:'P1', goal:'实现I2S音频采集框架', steps:'1. 配置I2S WS(SCK=GPIO38, SD=GPIO39)；2. 设置采样率16kHz；3. 建立DMA缓冲区接收音频流', resources:'INMP441麦克风阵列, ESP-IDF I2S Driver', schedule:'第2周 第5-6天'},
+            {id:8, phase:'P1', goal:'实现DCMI图像捕获功能', steps:'1. 配置DCMI D0-D7与同步信号；2. 初始化OV2640为VGA@15fps模式；3. 捕获单帧图像并打印尺寸', resources:'OV2640摄像头, ESP-IDF CAM Driver', schedule:'第3周 第1-2天'},
+            {id:9, phase:'P1', goal:'实现GPIO中断与控制信号管理', steps:'1. 配置QMA7981运动中断(GPIO07)为下降沿触发；2. 实现PWRKEY(GPIO47)软关机逻辑；3. 测试STATUS(GPIO48)状态反馈', resources:'GPIO电路, 万用表', schedule:'第3周 第3-4天'},
+            {id:10, phase:'P1', goal:'实现UART1与EC200U通信', steps:'1. 配置UART1波特率115200；2. 发送AT指令检测模块响应；3. 实现基本心跳发送功能', resources:'EC200U模块, USB转TTL', schedule:'第3周 第5-6天'},
+            {id:11, phase:'P1', goal:'初始化BLE广播与扫描功能', steps:'1. 基于ESP-IDF BLE Stack建立广播；2. 设置可发现模式；3. 扫描周围设备并打印MAC地址', resources:'ESP32-S3蓝牙协议栈, 另一BLE设备', schedule:'第4周 第1-2天'},
+            {id:12, phase:'P1', goal:'实现Wi-Fi校园网络连接能力', steps:'1. 配置SSID与密码；2. 连接指定AP；3. 获取IP地址并ping通网关', resources:'校园WiFi环境, ESP-IDF Wi-Fi API', schedule:'第4周 第3-4天'},
+            {id:13, phase:'P1', goal:'整合所有驱动并创建统一设备管理层', steps:'1. 封装各驱动为独立模块；2. 创建device_manager.c统一接口；3. 实现init_all_peripherals()函数', resources:'VS Code, Git, C语言标准库', schedule:'第4周 第5-6天'},
+            {id:14, phase:'P1', goal:'编写驱动层单元测试套件', steps:'1. 为每个驱动编写mock测试；2. 使用Unity框架运行自动化测试；3. 覆盖率≥85%', resources:'Unity Test Framework, CMock', schedule:'第5周 第1-2天'},
+            {id:15, phase:'P2', goal:'设计PostureTask并集成至FreeRTOS', steps:'1. 创建优先级25的FreeRTOS任务；2. 周期设为50ms；3. 绑定至Core 0', resources:'FreeRTOS, ESP-IDF任务API', schedule:'第5周 第3-4天'},
+            {id:16, phase:'P2', goal:'实现姿态检测核心算法', steps:'1. 编写calculate_posture_score()函数；2. 实现剧烈摇晃、跌倒等模式识别；3. 输出评分(0-100)', resources:'伪代码示例, 数学运算库', schedule:'第5周 第5-6天'},
+            {id:17, phase:'P2', goal:'设定姿态触发阈值并测试边界条件', steps:'1. 设置评分≥40进入下一阶段；2. 模拟各种运动状态验证输出；3. 记录误触发情况', resources:'动作模拟装置, 日志分析工具', schedule:'第6周 第1-2天'},
+            {id:18, phase:'P2', goal:'创建AudioTask并实现I2S唤醒机制', steps:'1. 创建优先级20的AudioTask(Core 1)；2. 接收xPostureSemaphore信号后启动；3. 启动10秒音频采集窗口', resources:'FreeRTOS, xSemaphore, I2S Driver', schedule:'第6周 第3-4天'},
+            {id:19, phase:'P2', goal:'实现高分贝检测逻辑', steps:'1. 计算音频RMS值转换为dB；2. 判断>80dB持续>2秒；3. 赋予60分权重', resources:'音频处理库, RMS计算函数', schedule:'第6周 第5-6天'},
+            {id:20, phase:'P2', goal:'部署TinyML关键词检测模型(TFLite Micro)', steps:'1. 将80KB模型量化为C数组；2. 加载至Tensor Arena；3. 实现推理入口函数', resources:'TensorFlow Lite Micro, Model Converter', schedule:'第7周 第1-2天'},
+            {id:21, phase:'P2', goal:'实现关键词匹配评分逻辑', steps:'1. 解析模型输出得分；2. 匹配"救命""打人"等关键词；3. 检测到则赋予70分', resources:'关键词列表, 评分逻辑模块', schedule:'第7周 第3-4天'},
+            {id:22, phase:'P2', goal:'设计综合音频评分机制', steps:'1. 融合分贝与关键词得分；2. 输出最终audio_score(0-100)；3. 设定≥60进入视觉检测', resources:'score_fusion.c', schedule:'第7周 第5-6天'},
+            {id:23, phase:'P2', goal:'创建VisionTask并实现DCMI唤醒', steps:'1. 创建优先级15的VisionTask(Core 1)；2. 接收xAudioSemaphore后启动；3. 开启15秒视频录制', resources:'FreeRTOS, DCMI Driver', schedule:'第8周 第1-2天'},
+            {id:24, phase:'P2', goal:'部署TinyML视觉检测模型', steps:'1. 将150KB TFLite模型嵌入固件；2. 输入预处理为96×96×3；3. 实现推理循环', resources:'TFLite Micro, 图像缩放库', schedule:'第8周 第3-4天'},
+            {id:25, phase:'P2', goal:'实现肢体冲突与多人聚集检测评分', steps:'1. 解析模型输出conflict_score > 0.7 → 80分；2. crowd_score > 0.6 → 60分；3. 整合为vision_score', resources:'vision_analysis.c', schedule:'第8周 第5-6天'},
+            {id:26, phase:'P2', goal:'实现危险物品与异常姿势检测', steps:'1. 添加object_score > 0.7 → 70分；2. pose_score > 0.6 → 50分；3. 支持动态阈值调整', resources:'同上', schedule:'第9周 第1-2天'},
+            {id:27, phase:'P2', goal:'设计三模态融合评分公式', steps:'1. 实现加权计算：final_score = posture×0.3 + audio×0.4 + vision×0.3；2. 设定≥80触发警报', resources:'fusion_algorithm.c', schedule:'第9周 第3-4天'},
+            {id:28, phase:'P2', goal:'实现无摄像头模式快速触发逻辑', steps:'1. 当camera_disabled时启用两模态判定；2. 姿态+音频≥75直接触发；3. 更新决策表', resources:'decision_logic.c', schedule:'第9周 第5-6天'},
+            {id:29, phase:'P2', goal:'实现Tensor Arena共享与释放机制', steps:'1. 使用xArenaSemaphore控制访问；2. 音频完成后释放DMA缓冲区；3. 视觉完成后释放帧缓冲区', resources:'FreeRTOS信号量, heap管理', schedule:'第10周 第1-2天'},
+            {id:30, phase:'P2', goal:'优化内存使用并防止碎片化', steps:'1. 动态分配限制在PSRAM区域；2. 使用slab分配器；3. 运行压力测试', resources:'PSRAM allocator, stress_test.py', schedule:'第10周 第3-4天'},
+            {id:31, phase:'P2', goal:'实现低电量模式下的传感器降级策略', steps:'1. 电量<50%降低BLE扫描频率；2. <20%关闭摄像头与麦克风；3. 仅保留SOS按钮与心跳', resources:'battery_monitor.c, power_policy.h', schedule:'第10周 第5-6天'},
+            {id:32, phase:'P3', goal:'实现BLE心跳广播(type=0x00)', steps:'1. 构建广播包含device_id, battery_level, rssi_ref；2. 每5秒发送一次；3. 持续100ms', resources:'BLE Advertisement API, timer', schedule:'第11周 第1-2天'},
+            {id:33, phase:'P3', goal:'实现BLE警报广播(type=0x01)与切换逻辑', steps:'1. 收到触发信号后切换广播类型；2. 添加danger_level字段；3. 持续发送直至确认', resources:'同上', schedule:'第11周 第3-4天'},
+            {id:34, phase:'P3', goal:'实现BLE双模扫描策略', steps:'1. 心跳模式：每5秒扫描100ms；2. 警报模式：每100ms持续扫描；3. 自动恢复', resources:'scan_scheduler.c', schedule:'第11周 第5-6天'},
+            {id:35, phase:'P3', goal:'实现RSSI收集与滑动平均滤波', steps:'1. 存储最近5次RSSI值；2. 计算均值作为当前强度；3. 减少波动干扰', resources:'filter_rssi()函数, ring buffer', schedule:'第12周 第1-2天'},
+            {id:36, phase:'P3', goal:'实现rssi_to_distance距离转换函数', steps:'1. 实现自由空间路径损耗模型；2. distance = 10^((rssi_ref - rssi)/20)；3. 单位：米', resources:'math.h, powf()', schedule:'第12周 第3-4天'},
+            {id:37, phase:'P3', goal:'实现群体感知定位算法', steps:'1. 收集≥3台附近设备的RSSI；2. 三边定位计算坐标；3. 输出{lat, lng, accuracy}', resources:'trilateration.c, GPS仿真器', schedule:'第12周 第5-6天'},
+            {id:38, phase:'P3', goal:'实现多源定位优先级策略', steps:'1. P1: BLE三角定位；2. P2: 基站定位；3. P3: GPS(可选)；4. 自动降级', resources:'location_priority.c', schedule:'第13周 第1-2天'},
+            {id:39, phase:'P3', goal:'实现气压计楼层判定功能', steps:'1. 获取当前与海平面气压；2. height_diff = 44330*(1-(p/p0)^0.1903)；3. floor = height_diff / 3 + 1', resources:'BMP388 driver, sea level data', schedule:'第13周 第3-4天'},
+            {id:40, phase:'P3', goal:'实现4G模块Sleep模式(AT+CFUN=0)', steps:'1. 发送指令进入低功耗；2. 功耗降至~5mA；3. 支持远程唤醒', resources:'AT Command Set, EC200U Module', schedule:'第13周 第5-6天'},
+            {id:41, phase:'P3', goal:'实现4G按需激活与网络注册', steps:'1. 发送AT+CFUN=1唤醒；2. 查询+COPS?确认注册；3. 建立PDP上下文', resources:'同上', schedule:'第14周 第1-2天'},
+            {id:42, phase:'P3', goal:'实现TCP连接与警报数据上报', steps:'1. 建立TLS 1.3加密连接；2. POST /api/alert携带device_id, danger_score；3. 接收ACK确认', resources:'mbedTLS, HTTP Client', schedule:'第14周 第3-4天'},
+            {id:43, phase:'P3', goal:'实现上传后自动返回Sleep模式', steps:'1. 数据发送完成后发送AT+CFUN=0；2. 验证电流降至5mA；3. 添加超时保护', resources:'power_management.c', schedule:'第14周 第5-6天'},
+            {id:44, phase:'P4', goal:'设计RESTful API接口规范', steps:'1. 定义/api/alert POST请求体；2. 设计响应码；3. 生成OpenAPI文档', resources:'Swagger Editor, Node.js Express', schedule:'第15周 第1-2天'},
+            {id:45, phase:'P4', goal:'实现API服务接收警报数据', steps:'1. 使用Node.js/Python搭建服务器；2. 解析JSON payload；3. 记录日志', resources:'Express/FastAPI, mbedTLS', schedule:'第15周 第3-4天'},
+            {id:46, phase:'P4', goal:'搭建PostgreSQL数据库存储警报记录', steps:'1. 设计alarms, devices, locations表结构；2. 建立索引；3. 实现CRUD操作', resources:'PostgreSQL, pgAdmin', schedule:'第15周 第5-6天'},
+            {id:47, phase:'P4', goal:'集成Redis缓存实时设备状态', steps:'1. 存储在线设备列表；2. TTL设置为60秒；3. 支持快速查询', resources:'Redis Server, Redis-py', schedule:'第16周 第1-2天'},
+            {id:48, phase:'P4', goal:'实现消息队列异步分发警报', steps:'1. 使用RabbitMQ/Kafka发布事件；2. 解耦接收与通知流程；3. 确保可靠性', resources:'RabbitMQ, AMQP SDK', schedule:'第16周 第3-4天'},
+            {id:49, phase:'P4', goal:'开发位置计算引擎', steps:'1. 接收RSSI辅助数据；2. 调用三边定位算法；3. 结合基站信息校正', resources:'自研定位服务, Python', schedule:'第16周 第5-6天'},
+            {id:50, phase:'P4', goal:'实现智能分发算法筛选责任人', steps:'1. 计算最近的3-5位老师/保安；2. 避免重复推送；3. 生成通知列表', resources:'geolocation library, logic rules', schedule:'第17周 第1-2天'},
+            {id:51, phase:'P4', goal:'集成推送服务(Firebase/极光)', steps:'1. 配置推送证书；2. 实现向APP发送通知；3. 处理送达回执', resources:'Firebase Cloud Messaging, JPush SDK', schedule:'第17周 第3-4天'},
+            {id:52, phase:'P5', goal:'开发老师APP接收警报通知', steps:'1. 使用Flutter开发iOS/Android应用；2. WebSocket监听警报；3. 弹窗提醒', resources:'Flutter, Firebase, Dart', schedule:'第17周 第5-6天'},
+            {id:53, phase:'P5', goal:'开发家长APP与隐私控制界面', steps:'1. 实现麦克风时段、摄像头开关配置；2. 数据保留期选择；3. 同步至设备', resources:'Flutter, REST API Client', schedule:'第18周 第1-2天'},
+            {id:54, phase:'P5', goal:'开发保安室Web大屏监控系统', steps:'1. 使用Vue.js构建地图视图；2. 实时显示警报位置；3. 支持视频快照查看', resources:'Vue.js, Leaflet, WebSocket', schedule:'第18周 第3-4天'},
+            {id:55, phase:'P6', goal:'开展端到端功能测试', steps:'1. 模拟真实跌倒+呼救场景；2. 验证全流程响应时间<3秒；3. 记录延迟数据', resources:'测试用例, 秒表, 日志系统', schedule:'第18周 第5-6天'},
+            {id:56, phase:'P6', goal:'执行误报率与续航能力测试', steps:'1. 正常活动下连续运行72小时；2. 统计误触发次数；3. 测量电池消耗', resources:'电池记录仪, 自动化脚本', schedule:'第19周 第1-6天'},
+            {id:57, phase:'P6', goal:'完成系统联调与最终交付', steps:'1. 整合所有模块；2. 进行回归测试；3. 生成最终交付包与文档', resources:'Git, Build System, Documentation', schedule:'第20-28周'}
+        ];
+
+        // 阶段颜色映射
+        const phaseColors = {
+            'P0': 'bg-purple-500',
+            'P1': 'bg-green-500',
+            'P2': 'bg-yellow-500',
+            'P3': 'bg-blue-500',
+            'P4': 'bg-red-500',
+            'P5': 'bg-pink-500',
+            'P6': 'bg-indigo-500'
+        };
+        const phaseText = {
+            'P0': '硬件选型验证',
+            'P1': '基础驱动开发',
+            'P2': '三重判定引擎',
+            'P3': '通信与定位系统',
+            'P4': '云端服务开发',
+            'P5': '移动端应用开发',
+            'P6': '系统联调测试'
+        };
+
+        // 生成时间线HTML
+        function renderTimeline() {
+            const timelineContainer = document.querySelector('.timeline');
+            timelineContainer.innerHTML = '';
+            allTasks.forEach((task, index) => {
+                const isLeft = index % 2 === 0;
+                const itemClass = isLeft ? 'timeline__item timeline__item--left' : 'timeline__item timeline__item--right';
+                const weekDay = task.schedule.split(' ');
+                const week = weekDay[0];
+                const day = weekDay.slice(1).join(' ');
+
+                const itemHTML = `
+                <div class="${itemClass}">
+                    <div class="timeline__content cursor-pointer hover:shadow-xl transition-all duration-300" data-task-id="${task.id}">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="stage-badge ${phaseColors[task.phase]}">${task.phase}: ${phaseText[task.phase]}</span>
+                            <span class="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded">${week}</span>
+                        </div>
+                        <h3 class="font-bold text-lg mb-1 text-gray-800">任务 #${task.id}: ${task.goal}</h3>
+                        <p class="text-gray-600 text-sm mb-3">${task.steps.substring(0, 80)}...</p>
+                        <div class="text-xs text-gray-500"><i class="far fa-calendar mr-1"></i> ${day}</div>
+                    </div>
+                    <div class="timeline__circle"></div>
+                </div>
+                `;
+                timelineContainer.innerHTML += itemHTML;
+            });
+
+            // 为所有卡片添加点击事件
+            document.querySelectorAll('.timeline__content').forEach(card => {
+                card.addEventListener('click', () => {
+                    const taskId = parseInt(card.getAttribute('data-task-id'));
+                    showTaskDetail(taskId);
+                });
+            });
+        }
+
+        // 显示任务详情模态框
+        function showTaskDetail(taskId) {
+            const task = allTasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('modalTaskTitle').textContent = `任务 #${task.id}: ${task.goal}`;
+            document.getElementById('modalTaskMeta').innerHTML = `
+                <span class="stage-badge ${phaseColors[task.phase]} mr-3">${task.phase}: ${phaseText[task.phase]}</span>
+                <span class="mr-3"><i class="far fa-clock mr-1"></i> ${task.schedule}</span>
+            `;
+            document.getElementById('modalTaskGoal').textContent = task.goal;
+            document.getElementById('modalTaskSteps').innerHTML = task.steps.split('；').map(step => `<div class="mb-1">${step.trim()}</div>`).join('');
+            document.getElementById('modalTaskResources').textContent = task.resources;
+            document.getElementById('modalTaskSchedule').textContent = task.schedule;
+
+            const modal = document.getElementById('taskDetailModal');
+            modal.style.display = 'block';
+        }
+
+        // 关闭模态框
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            document.getElementById('taskDetailModal').style.display = 'none';
+        });
+        window.addEventListener('click', (event) => {
+            const modal = document.getElementById('taskDetailModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // 初始化ECharts图表
+        function initChart() {
+            const chartDom = document.getElementById('phaseChart');
+            const myChart = echarts.init(chartDom);
+
+            const phaseData = [
+                { name: '硬件选型验证 (P0)', value: 2, taskCount: 4, color: '#8b5cf6' },
+                { name: '基础驱动开发 (P1)', value: 4, taskCount: 8, color: '#10b981' },
+                { name: '三重判定引擎 (P2)', value: 6, taskCount: 18, color: '#f59e0b' },
+                { name: '通信与定位系统 (P3)', value: 4, taskCount: 9, color: '#3b82f6' },
+                { name: '云端服务开发 (P4)', value: 4, taskCount: 8, color: '#ef4444' },
+                { name: '移动端应用开发 (P5)', value: 4, taskCount: 8, color: '#ec4899' },
+                { name: '系统联调测试 (P6)', value: 4, taskCount: 2, color: '#6366f1' }
+            ];
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        return `${params.name}<br/>周期: <b>${params.value}周</b><br/>任务数: <b>${params.data.taskCount}项</b>`;
+                    }
+                },
+                legend: {
+                    top: '5%',
+                    left: 'center',
+                    textStyle: { color: '#4b5563' }
+                },
+                series: [
+                    {
+                        name: '阶段周期分布',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: true,
+                            formatter: '{b}: {c}周',
+                            color: '#1f2937',
+                            fontWeight: 'bold'
+                        },
+                        emphasis: {
+                            label: { show: true, fontSize: '16', fontWeight: 'bold' }
+                        },
+                        labelLine: { show: true },
+                        data: phaseData.map(p => ({value: p.value, name: p.name, taskCount: p.taskCount, itemStyle: {color: p.color}}))
+                    }
+                ]
+            };
+
+            myChart.setOption(option);
+            window.addEventListener('resize', () => myChart.resize());
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTimeline();
+            initChart();
+        });
+    </script>
+</body>
+</html>
