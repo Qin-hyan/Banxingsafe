@@ -160,8 +160,6 @@ static esp_err_t i2c_check_device(i2c_port_t i2c_num, uint8_t addr)
 
 esp_err_t bma400_init(const bma400_config_t *config)
 {
-    ESP_LOGI(TAG, "初始化 BMA400...");
-    
     if (!config) {
         ESP_LOGE(TAG, "配置参数为空");
         return ESP_ERR_INVALID_ARG;
@@ -169,7 +167,6 @@ esp_err_t bma400_init(const bma400_config_t *config)
     
     // 检查是否已初始化
     if (s_bma400.initialized) {
-        ESP_LOGW(TAG, "BMA400 已初始化，先去初始化");
         bma400_deinit();
     }
     
@@ -182,7 +179,6 @@ esp_err_t bma400_init(const bma400_config_t *config)
     // 创建互斥锁
     s_bma400.mutex = xSemaphoreCreateMutexStatic(&s_bma400.mutex_buffer);
     if (!s_bma400.mutex) {
-        ESP_LOGE(TAG, "创建互斥锁失败");
         return ESP_ERR_NO_MEM;
     }
     
@@ -198,27 +194,20 @@ esp_err_t bma400_init(const bma400_config_t *config)
     
     esp_err_t ret = i2c_param_config(s_bma400.i2c_num, &i2c_conf);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "I2C 配置失败：%s", esp_err_to_name(ret));
         return ret;
     }
     
     ret = i2c_driver_install(s_bma400.i2c_num, I2C_MODE_MASTER, 0, 0, 0);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "I2C 驱动安装失败：%s", esp_err_to_name(ret));
         return ret;
     }
-    
-    ESP_LOGI(TAG, "I2C 总线配置成功 (SDA=%d, SCL=%d, %dkHz)",
-             config->sda_gpio, config->scl_gpio, BMA400_I2C_FREQ / 1000);
     
     // 检查设备是否存在
     ret = i2c_check_device(s_bma400.i2c_num, s_bma400.i2c_addr);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "I2C 设备 0x%02X 未响应：%s", s_bma400.i2c_addr, esp_err_to_name(ret));
-        ESP_LOGE(TAG, "请检查：1. 接线是否正确 2. 上拉电阻是否连接 3. 设备地址是否正确");
         return ret;
     }
-    ESP_LOGI(TAG, "I2C 设备 0x%02X 响应正常", s_bma400.i2c_addr);
     
     // 读取芯片 ID
     ret = bma400_read_chip_id(&s_bma400.chip_id);
@@ -227,8 +216,6 @@ esp_err_t bma400_init(const bma400_config_t *config)
         return ret;
     }
     
-    ESP_LOGI(TAG, "读取芯片 ID: 0x%02X", s_bma400.chip_id);
-    
     // 验证芯片 ID
     if (s_bma400.chip_id != BMA400_CHIP_ID_VALUE) {
         ESP_LOGE(TAG, "芯片 ID 不匹配！期望 0x%02X，实际 0x%02X", 
@@ -236,13 +223,9 @@ esp_err_t bma400_init(const bma400_config_t *config)
         return ESP_ERR_INVALID_VERSION;
     }
     
-    ESP_LOGI(TAG, "确认传感器：Bosch BMA400");
-    
     // 软复位
-    ESP_LOGD(TAG, "执行软复位");
     ret = i2c_write_reg(BMA400_REG_CMD, BMA400_CMD_SOFT_RESET);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "软复位失败：%s", esp_err_to_name(ret));
         // 继续执行，不立即失败
     }
     vTaskDelay(pdMS_TO_TICKS(10));
@@ -250,14 +233,12 @@ esp_err_t bma400_init(const bma400_config_t *config)
     // 配置量程
     ret = bma400_set_range(config->range);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "配置量程失败：%s", esp_err_to_name(ret));
         return ret;
     }
     
     // 配置输出数据率
     ret = bma400_set_odr(config->odr);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "配置输出数据率失败：%s", esp_err_to_name(ret));
         return ret;
     }
     
@@ -265,25 +246,21 @@ esp_err_t bma400_init(const bma400_config_t *config)
     uint8_t acc_conf = (config->resolution << 4) | 0x01;  // OSR1 = 1 (正常模式)
     ret = i2c_write_reg(BMA400_REG_ACC_CONF, acc_conf);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "配置加速度计失败：%s", esp_err_to_name(ret));
         return ret;
     }
     
     // 配置功耗：低功耗模式
     ret = i2c_write_reg(BMA400_REG_PWR_CONF, 0x00);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "配置功耗失败：%s", esp_err_to_name(ret));
         return ret;
     }
     
     // 启用传感器：正常模式
     ret = i2c_write_reg(BMA400_REG_PWR_CTRL, 0x01);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "启用传感器失败：%s", esp_err_to_name(ret));
         return ret;
     }
     
-    ESP_LOGI(TAG, "BMA400 初始化完成");
     s_bma400.initialized = true;
     
     return ESP_OK;
@@ -380,7 +357,6 @@ esp_err_t bma400_read_accel(bma400_accel_data_t *data)
     data->y = (int16_t)(y_raw * scale);
     data->z = (int16_t)(z_raw * scale);
     
-    ESP_LOGD(TAG, "加速度：X=%d, Y=%d, Z=%d mg", data->x, data->y, data->z);
     return ESP_OK;
 }
 
@@ -392,9 +368,6 @@ esp_err_t bma400_set_range(uint8_t range)
     }
     
     s_bma400.config.range = range;
-    
-    const char *range_names[] = {"16g", "2g", "4g", "8g"};
-    ESP_LOGD(TAG, "设置量程：±%s", range_names[range]);
     
     // 写入量程配置寄存器
     return i2c_write_reg(BMA400_REG_RANGE, range);
@@ -408,8 +381,6 @@ esp_err_t bma400_set_odr(uint8_t odr)
     
     s_bma400.config.odr = odr;
     
-    ESP_LOGD(TAG, "设置输出数据率：%d Hz", 100 >> (9 - odr));
-    
     // 写入 ODR 配置寄存器
     return i2c_write_reg(BMA400_REG_ODR, odr);
 }
@@ -421,9 +392,6 @@ esp_err_t bma400_set_mode(uint8_t mode)
     }
     
     s_bma400.config.mode = mode;
-    
-    const char *mode_names[] = {"LOW_POWER", "NORMAL", "SUSPEND"};
-    ESP_LOGD(TAG, "设置工作模式：%s", mode_names[mode]);
     
     // 更新 PWR_CTRL 寄存器
     uint8_t pwr_ctrl = (mode == BMA400_MODE_SUSPEND) ? 0x00 : 0x01;

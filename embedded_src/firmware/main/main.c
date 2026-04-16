@@ -82,8 +82,6 @@ static int calculate_posture_score(const bma400_accel_data_t *accel)
  */
 static void posture_detection_task(void *arg)
 {
-    ESP_LOGI(TAG, "姿态检测任务已启动");
-    
     bma400_accel_data_t accel_data;
     int posture_score = 0;
     
@@ -116,8 +114,6 @@ static void posture_detection_task(void *arg)
  */
 static void audio_analysis_task(void *arg)
 {
-    ESP_LOGI(TAG, "音频分析任务已启动");
-    
     while (1) {
         // TODO: 读取 INMP441 麦克风数据
         // TODO: 进行音频特征提取
@@ -132,8 +128,6 @@ static void audio_analysis_task(void *arg)
  */
 static void visual_analysis_task(void *arg)
 {
-    ESP_LOGI(TAG, "视觉分析任务已启动");
-    
     while (1) {
         // TODO: 读取 OV2640 摄像头数据
         // TODO: 运行 TFLite Micro 模型推理
@@ -148,8 +142,6 @@ static void visual_analysis_task(void *arg)
  */
 static void alert_handler_task(void *arg)
 {
-    ESP_LOGI(TAG, "警报处理任务已启动");
-    
     while (1) {
         // 等待警报触发事件
         EventBits_t bits = xEventGroupWaitBits(
@@ -176,8 +168,6 @@ static void alert_handler_task(void *arg)
  */
 static void triple_detection_engine(void *arg)
 {
-    ESP_LOGI(TAG, "三重判定引擎已启动");
-    
     while (1) {
         EventBits_t bits = xEventGroupGetBits(s_event_group);
         
@@ -211,11 +201,6 @@ static void triple_detection_engine(void *arg)
  */
 void app_main(void)
 {
-    ESP_LOGI(TAG, "=================================");
-    ESP_LOGI(TAG, "  BanSafe 固件 v0.4.0");
-    ESP_LOGI(TAG, "  ESP32-S3 安全防护系统");
-    ESP_LOGI(TAG, "=================================");
-    
     // 初始化 NVS
     ESP_ERROR_CHECK(init_nvs());
     
@@ -223,20 +208,9 @@ void app_main(void)
     s_event_group = xEventGroupCreate();
     
     // 初始化 BMA400 姿态传感器
-    ESP_LOGI(TAG, "初始化 BMA400 姿态传感器...");
-    ESP_LOGI(TAG, "配置：I2C 总线=%d, SDA=%d, SCL=%d, INT=%d",
-             BMA400_I2C_NUM, BMA400_I2C_SDA_GPIO, BMA400_I2C_SCL_GPIO, BMA400_INT_GPIO);
-    ESP_LOGI(TAG, "BMA400 I2C 地址：0x%02X", BMA400_I2C_ADDR);
-    
     esp_err_t ret = bma400_init_default();
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "BMA400 初始化失败：%s", esp_err_to_name(ret));
-        ESP_LOGE(TAG, "请检查：");
-        ESP_LOGE(TAG, "  1. BMA400 模块接线是否正确");
-        ESP_LOGE(TAG, "  2. SDA/SCL引脚是否与配置一致");
-        ESP_LOGE(TAG, "  3. I2C 上拉电阻是否连接");
-    } else {
-        ESP_LOGI(TAG, "BMA400 初始化成功");
     }
     
     // 创建任务
@@ -245,6 +219,4 @@ void app_main(void)
     xTaskCreate(visual_analysis_task, "visual", 8192, NULL, 3, NULL);
     xTaskCreate(alert_handler_task, "alert", 4096, NULL, 6, NULL);
     xTaskCreate(triple_detection_engine, "engine", 4096, NULL, 5, NULL);
-    
-    ESP_LOGI(TAG, "所有任务已启动，系统运行中...");
 }
