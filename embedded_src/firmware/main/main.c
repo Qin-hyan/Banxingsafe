@@ -15,9 +15,10 @@
 #include "esp_system.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "driver/i2c.h"
 
-// 引入 BMA400 姿态传感器驱动
-#include "bma400.h"
+// 引入 QMA7981 姿态传感器驱动
+#include "qma7981.h"
 
 // 标签
 static const char *TAG = "BanSafe";
@@ -33,8 +34,6 @@ static EventGroupHandle_t s_event_group;
 
 // 姿态评分阈值
 #define POSTURE_SCORE_THRESHOLD     (40)    // 姿态异常阈值
-#define AUDIO_SCORE_THRESHOLD       (60)    // 音频异常阈值
-#define VISUAL_SCORE_THRESHOLD      (80)    // 视觉异常阈值
 
 /**
  * @brief 初始化 NVS 存储
@@ -50,12 +49,49 @@ static esp_err_t init_nvs(void)
 }
 
 /**
+ * @brief I2C 总线扫描，检测所有连接的设备
+ */
+void i2c_scan(void)
+{
+    i2c_port_t i2c_num = QMA7981_I2C_NUM;
+    uint8_t address;
+    int count = 0;
+    
+    ESP_LOGI(TAG, "开始 I2C 总线扫描...");
+    
+    for (address = 1; address < 127; address++) {
+        esp_err_t ret = i2c_master_write_to_device(
+            i2c_num,
+            address,
+            &address,
+            0,
+            pdMS_TO_TICKS(10)
+        );
+        
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "检测到设备：0x%02X (%d)", address, address);
+            count++;
+        } else if (ret == ESP_ERR_TIMEOUT) {
+            // 无响应，跳过
+        } else {
+            ESP_LOGW(TAG, "扫描地址 0x%02X 失败：%s", address, esp_err_to_name(ret));
+        }
+    }
+    
+    if (count == 0) {
+        ESP_LOGW(TAG, "未检测到任何 I2C 设备！");
+    } else {
+        ESP_LOGI(TAG, "扫描完成，共检测到 %d 个设备", count);
+    }
+}
+
+/**
  * @brief 计算姿态评分
  * 
  * @param accel 加速度数据
  * @return int 评分 (0-100)
  */
-static int calculate_posture_score(const bma400_accel_data_t *accel)
+static int calculate_posture_score(const qma7981_accel_data_t *accel)
 {
     // 计算加速度矢量的大小 (单位：mg)
     float accel_magnitude = sqrtf(
@@ -82,12 +118,12 @@ static int calculate_posture_score(const bma400_accel_data_t *accel)
  */
 static void posture_detection_task(void *arg)
 {
-    bma400_accel_data_t accel_data;
+    qma7981_accel_data_t accel_data;
     int posture_score = 0;
     
     while (1) {
-        // 读取 BMA400 姿态传感器
-        if (bma400_read_accel(&accel_data) == ESP_OK) {
+        // 读取 QMA7981 姿态传感器
+        if (qma7981_read_accel(&accel_data) == ESP_OK) {
             // 计算姿态评分
             posture_score = calculate_posture_score(&accel_data);
             
@@ -207,10 +243,19 @@ void app_main(void)
     // 创建事件组
     s_event_group = xEventGroupCreate();
     
-    // 初始化 BMA400 姿态传感器
-    esp_err_t ret = bma400_init_default();
+    // I2C 总线扫描，检测所有设备
+    i2c_scan();
+    
+    // 初始化 QMA7981 姿态传感器
+    esp_err_t ret = qma7981_init_default();
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "BMA400 初始化失败：%s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "QMA7981 初始化失败：%s", esp_err_to_name(ret));
+    } else {
+        // 读取设备 ID 确认
+        uint8_t device_id;
+        if (qma7981_read_device_id(&device_id) == ESP_OK) {
+            ESP_LOGI(TAG, "QMA7981 设备 ID: 0x%02X", device_id);
+        }
     }
     
     // 创建任务
