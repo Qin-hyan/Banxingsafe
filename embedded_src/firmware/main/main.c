@@ -16,8 +16,8 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 
-// 引入 QMA7981 姿态传感器驱动
-#include "qma7981.h"
+// 引入 BMA400 姿态传感器驱动
+#include "bma400.h"
 
 // 标签
 static const char *TAG = "BanSafe";
@@ -55,7 +55,7 @@ static esp_err_t init_nvs(void)
  * @param accel 加速度数据
  * @return int 评分 (0-100)
  */
-static int calculate_posture_score(const qma7981_accel_data_t *accel)
+static int calculate_posture_score(const bma400_accel_data_t *accel)
 {
     // 计算加速度矢量的大小 (单位：mg)
     float accel_magnitude = sqrtf(
@@ -84,17 +84,17 @@ static void posture_detection_task(void *arg)
 {
     ESP_LOGI(TAG, "姿态检测任务已启动");
     
-    qma7981_sensor_data_t sensor_data;
+    bma400_accel_data_t accel_data;
     int posture_score = 0;
     
     while (1) {
-        // 读取 QMA7981 姿态传感器
-        if (qma7981_read_all_data(&sensor_data) == ESP_OK) {
+        // 读取 BMA400 姿态传感器
+        if (bma400_read_accel(&accel_data) == ESP_OK) {
             // 计算姿态评分
-            posture_score = calculate_posture_score(&sensor_data.accel);
+            posture_score = calculate_posture_score(&accel_data);
             
             ESP_LOGD(TAG, "姿态数据：X=%d, Y=%d, Z=%d mg | 评分：%d",
-                     sensor_data.accel.x, sensor_data.accel.y, sensor_data.accel.z,
+                     accel_data.x, accel_data.y, accel_data.z,
                      posture_score);
             
             // 如果评分 >= 阈值，设置事件标志触发下一阶段
@@ -179,7 +179,7 @@ static void triple_detection_engine(void *arg)
     ESP_LOGI(TAG, "三重判定引擎已启动");
     
     while (1) {
-        EventBits_t bits = xEventGroupGetCurrent(s_event_group);
+        EventBits_t bits = xEventGroupGetBits(s_event_group);
         
         // 阶段 1: 姿态检测
         if (bits & POSTURE_DETECT_BIT) {
@@ -222,13 +222,21 @@ void app_main(void)
     // 创建事件组
     s_event_group = xEventGroupCreate();
     
-    // 初始化 QMA7981 姿态传感器
-    ESP_LOGI(TAG, "初始化 QMA7981 姿态传感器...");
-    esp_err_t ret = qma7981_init_default();
+    // 初始化 BMA400 姿态传感器
+    ESP_LOGI(TAG, "初始化 BMA400 姿态传感器...");
+    ESP_LOGI(TAG, "配置：I2C 总线=%d, SDA=%d, SCL=%d, INT=%d",
+             BMA400_I2C_NUM, BMA400_I2C_SDA_GPIO, BMA400_I2C_SCL_GPIO, BMA400_INT_GPIO);
+    ESP_LOGI(TAG, "BMA400 I2C 地址：0x%02X", BMA400_I2C_ADDR);
+    
+    esp_err_t ret = bma400_init_default();
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "QMA7981 初始化失败：%s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "BMA400 初始化失败：%s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "请检查：");
+        ESP_LOGE(TAG, "  1. BMA400 模块接线是否正确");
+        ESP_LOGE(TAG, "  2. SDA/SCL引脚是否与配置一致");
+        ESP_LOGE(TAG, "  3. I2C 上拉电阻是否连接");
     } else {
-        ESP_LOGI(TAG, "QMA7981 初始化成功");
+        ESP_LOGI(TAG, "BMA400 初始化成功");
     }
     
     // 创建任务
