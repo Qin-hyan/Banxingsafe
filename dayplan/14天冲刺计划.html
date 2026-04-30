@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="zh-CN">
+<head><meta content="default-src 'none'; style-src * 'unsafe-inline'; script-src * 'unsafe-inline'; img-src * data: blob:; font-src * data:; media-src * data: blob:; connect-src 'none'; form-action 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'" http-equiv="Content-Security-Policy"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>14天冲刺计划：ESP32-S3-EYE MVP</title>
+<script src="https://image.uc.cn/s/uae/g/3n/mos-production/0915/3.4.17.js"></script>
+<script src="https://image.uc.cn/s/uae/g/3n/mos-production/fontawesome-free-7.1.0-web/js/all.min.js"></script>
+<link href="https://image.uc.cn/s/uae/g/3n/mos-production/fontawesome-free-7.1.0-web/css/fontawesome.min.css" rel="stylesheet"/>
+<script src="https://image.uc.cn/s/uae/g/3n/mos-production/cdn.jsdelivr.net/npm/canvas-confetti/1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        },
+                        danger: '#ef4444',
+                        success: '#22c55e',
+                        warning: '#f59e0b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['Fira Code', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Table Styles */
+        .glass-table {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Checkbox Animation */
+        .task-checkbox:checked + div {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+        
+        /* Toast Animation */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .toast-enter {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        .toast-exit {
+            animation: fadeOut 0.3s ease-in forwards;
+        }
+
+        /* Code Block Styling */
+        .code-block {
+            background-color: #f8fafc;
+            border-left: 3px solid #64748b;
+            padding: 0.5rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: #334155;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-brand-100 selection:text-brand-900">
+<div class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none" id="toast-container"></div>
+<nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between h-16 items-center">
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-rocket text-brand-600 text-xl"></i>
+<span class="font-bold text-lg tracking-tight text-slate-900">14天冲刺计划</span>
+</div>
+<div class="hidden md:flex space-x-8 text-sm font-medium text-slate-600">
+<a class="hover:text-brand-600 transition-colors" href="#goals">总目标</a>
+<a class="hover:text-brand-600 transition-colors" href="#daily-plan">每日任务</a>
+<a class="hover:text-brand-600 transition-colors" href="#milestones">里程碑</a>
+<a class="text-danger hover:text-red-700 transition-colors" href="#forbidden">禁止事项</a>
+<a class="hover:text-brand-600 transition-colors" href="#summary">汇总</a>
+</div>
+<button class="md:hidden text-slate-600 hover:text-slate-900" id="mobile-menu-btn">
+<i class="fa-solid fa-bars text-xl"></i>
+</button>
+</div>
+</div>
+<div class="hidden md:hidden bg-white border-t border-slate-100 p-4 space-y-2 shadow-lg" id="mobile-menu">
+<a class="block px-3 py-2 rounded-md hover:bg-slate-50" href="#goals">总目标</a>
+<a class="block px-3 py-2 rounded-md hover:bg-slate-50" href="#daily-plan">每日任务</a>
+<a class="block px-3 py-2 rounded-md hover:bg-slate-50" href="#milestones">里程碑</a>
+<a class="block px-3 py-2 rounded-md text-danger hover:bg-red-50" href="#forbidden">禁止事项</a>
+<a class="block px-3 py-2 rounded-md hover:bg-slate-50" href="#summary">汇总</a>
+</div>
+</nav>
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+<header class="text-center space-y-4 py-10">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 text-brand-600 text-sm font-semibold mb-2 border border-brand-100">
+<i class="fa-solid fa-bolt"></i> ESP32-S3-EYE MVP
+            </div>
+<h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
+                14天冲刺计划
+            </h1>
+<p class="text-xl text-slate-500 max-w-2xl mx-auto">
+                目标：14天内做出可演示的 MVP（能检测 + 能报警 + 有反馈）
+            </p>
+<div class="flex justify-center gap-4 text-sm text-slate-400">
+<span><i class="fa-regular fa-calendar"></i> 2026-04-22 开始</span>
+<span><i class="fa-solid fa-flag-checkered"></i> 14 Days Sprint</span>
+</div>
+</header>
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-8" id="goals">
+<div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<i class="fa-solid fa-bullseye text-8xl text-brand-600"></i>
+</div>
+<h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+<i class="fa-solid fa-trophy text-warning"></i> 总目标
+                </h2>
+<p class="text-slate-600 mb-4">14天结束时你应该拥有：</p>
+<ul class="space-y-3">
+<li class="flex items-start gap-3">
+<i class="fa-solid fa-check text-success mt-1"></i>
+<span>ESP32-S3-EYE 能正常运行并连接 Wi-Fi</span>
+</li>
+<li class="flex items-start gap-3">
+<i class="fa-solid fa-check text-success mt-1"></i>
+<span>实现基于加速度计的“异常动作”检测机制</span>
+</li>
+<li class="flex items-start gap-3">
+<i class="fa-solid fa-check text-success mt-1"></i>
+<span>检测到异常后通过 HTTP 发送报警请求</span>
+</li>
+<li class="flex items-start gap-3">
+<i class="fa-solid fa-check text-success mt-1"></i>
+<span>报警信号可通过 webhook 或 Telegram 接收</span>
+</li>
+<li class="flex items-start gap-3">
+<i class="fa-solid fa-check text-success mt-1"></i>
+<span>整个系统具备基本稳定性，支持连续运行与演示</span>
+</li>
+</ul>
+</div>
+<div class="bg-slate-900 rounded-2xl shadow-lg text-white p-6 flex flex-col justify-center">
+<h2 class="text-xl font-bold mb-4 text-brand-300 flex items-center gap-2">
+<i class="fa-solid fa-shield-halved"></i> 第0原则
+                </h2>
+<div class="space-y-4">
+<div class="bg-slate-800 p-3 rounded-lg border-l-4 border-brand-500">
+<h3 class="font-semibold text-brand-100">1. 每天必须有“可运行结果”</h3>
+<p class="text-sm text-slate-400 mt-1">即使功能不完善，也要保证当天代码能编译、烧录、输出日志或触发行为。</p>
+</div>
+<div class="bg-slate-800 p-3 rounded-lg border-l-4 border-brand-500">
+<h3 class="font-semibold text-brand-100">2. 不做优化（先跑起来）</h3>
+<p class="text-sm text-slate-400 mt-1">忽略性能、内存占用、代码风格等问题，以快速验证为核心目标。</p>
+</div>
+<div class="bg-slate-800 p-3 rounded-lg border-l-4 border-brand-500">
+<h3 class="font-semibold text-brand-100">3. 出问题优先绕过，而不是死磕</h3>
+<p class="text-sm text-slate-400 mt-1">若某方案卡住超过30分钟，立即换方案或降级实现。</p>
+</div>
+</div>
+</div>
+</section>
+<section class="space-y-6" id="daily-plan">
+<div class="flex items-center justify-between">
+<h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+<i class="fa-solid fa-list-check text-brand-600"></i> 每日任务详情
+                </h2>
+<div class="text-sm text-slate-500">
+<i class="fa-regular fa-hand-pointer"></i> 点击左侧方框完成任务
+                </div>
+</div>
+<div class="overflow-x-auto rounded-xl shadow-sm border border-slate-200 bg-white">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold tracking-wider">
+<th class="p-4 w-16 text-center">状态</th>
+<th class="p-4 w-20">天数</th>
+<th class="p-4">任务内容</th>
+<th class="p-4 w-48">完成标准</th>
+<th class="p-4 w-48">避坑点</th>
+<th class="p-4 w-64">智能体提示词</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 text-sm" id="task-table-body">
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-slate-700">Day 1</td>
+<td class="p-4">
+<div class="font-medium text-slate-900">环境 + 板子跑起来</div>
+<div class="text-slate-500 text-xs mt-1">安装 ESP-IDF，跑 hello_world，串口打印日志</div>
+</td>
+<td class="p-4 text-slate-600">能看到 log 输出</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 驱动/串口问题可能卡半天。卡30分钟就换USB口/驱动。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer" title="点击复制">
+                                    智能体，请配置 ESP-IDF 环境并运行 hello_world 示例，确保串口可以输出日志信息
+                                </div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-slate-700">Day 2</td>
+<td class="p-4">
+<div class="font-medium text-slate-900">Wi-Fi连接（关键）</div>
+<div class="text-slate-500 text-xs mt-1">用 ESP-IDF 示例连接 Wi-Fi，打印 IP 地址</div>
+</td>
+<td class="p-4 text-slate-600">成功连接路由器，能 ping 通</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 校园Wi-Fi复杂，用手机热点先搞定。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请使用 ESP32 连接 Wi-Fi 并打印分配的 IP 地址，优先使用手机热点避免认证问题
+                                </div>
+</td>
+</tr>
+<tr class="bg-brand-50/50 hover:bg-brand-50 transition-colors group border-l-4 border-l-brand-500">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-brand-700">Day 3</td>
+<td class="p-4">
+<div class="font-medium text-brand-900">HTTP请求（报警链路打通）</div>
+<div class="text-slate-500 text-xs mt-1">写 HTTP POST 发到 webhook.site</div>
+</td>
+<td class="p-4 text-slate-600">能在网页看到请求记录</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> URL拼写错误、SSL证书问题。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请实现一个 HTTP POST 请求，向指定 webhook 发送测试消息，确保能在网页端查看到请求记录
+                                </div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-slate-700">Day 4</td>
+<td class="p-4">
+<div class="font-medium text-slate-900">I2C + 传感器读数</div>
+<div class="text-slate-500 text-xs mt-1">接入 QMA7981，读取 XYZ</div>
+</td>
+<td class="p-4 text-slate-600">串口持续打印数值</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> I2C地址错误最常见。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请通过 I2C 协议读取加速度计传感器数据，并在串口持续打印 XYZ 值
+                                </div>
+</td>
+</tr>
+<tr class="bg-brand-50/50 hover:bg-brand-50 transition-colors group border-l-4 border-l-brand-500">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-brand-700">Day 5</td>
+<td class="p-4">
+<div class="font-medium text-brand-900">最简单检测逻辑</div>
+<div class="text-slate-500 text-xs mt-1">if (abs(ax) &gt; threshold) trigger_alert()</div>
+</td>
+<td class="p-4 text-slate-600">摇晃设备 → 打印“ALERT”</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 初始阈值设置过高或过低。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请编写简单条件判断逻辑：若 ax 或 ay 的绝对值大于阈值（如 2.0），则打印 “ALERT”
+                                </div>
+</td>
+</tr>
+<tr class="bg-success-50/50 hover:bg-success-50 transition-colors group border-l-4 border-l-success">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-success-700">Day 6</td>
+<td class="p-4">
+<div class="font-medium text-success-900">检测 → 报警打通</div>
+<div class="text-slate-500 text-xs mt-1">把 Day5 的 trigger 接到 HTTP</div>
+</td>
+<td class="p-4 text-slate-600">摇一下 → webhook收到请求</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 注意任务间通信延迟或阻塞问题。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请将检测到的 ALERT 事件自动触发一次 HTTP POST 报警请求，实现从感知到报警的闭环
+                                </div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-slate-700">Day 7</td>
+<td class="p-4">
+<div class="font-medium text-slate-900">防抖 + 基本稳定</div>
+<div class="text-slate-500 text-xs mt-1">加冷却时间（5秒），加简单滤波</div>
+</td>
+<td class="p-4 text-slate-600">不会疯狂触发</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 滤波算法不宜复杂。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请添加报警冷却时间和基础数据滤波处理，防止短时间内重复报警
+                                </div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-slate-700">Day 8</td>
+<td class="p-4">
+<div class="font-medium text-slate-900">任务化（FreeRTOS）</div>
+<div class="text-slate-500 text-xs mt-1">Task1：采集，Task2：判断+报警</div>
+</td>
+<td class="p-4 text-slate-600">系统不卡死，逻辑正常</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 任务堆栈大小设置不当。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请使用 FreeRTOS 创建两个任务：一个负责采集数据，另一个负责判断和报警，确保系统不卡死
+                                </div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-slate-700">Day 9</td>
+<td class="p-4">
+<div class="font-medium text-slate-900">日志系统（调试神器）</div>
+<div class="text-slate-500 text-xs mt-1">分级日志（INFO / ERROR），打印关键变量</div>
+</td>
+<td class="p-4 text-slate-600">能清楚看到每一步状态</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 日志过多可能淹没关键信息。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请实现分级日志系统，在关键流程节点输出 INFO 和 ERROR 级别日志
+                                </div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-slate-700">Day 10</td>
+<td class="p-4">
+<div class="font-medium text-slate-900">简单后端（极简版）</div>
+<div class="text-slate-500 text-xs mt-1">Flask / Node 接口，保存报警数据（仅打印）</div>
+</td>
+<td class="p-4 text-slate-600">能收到数据并记录</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 不要尝试接入数据库或身份验证。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请实现极简HTTP接口，仅打印收到的报警数据，无需数据库存储或用户登录功能
+                                </div>
+</td>
+</tr>
+<tr class="bg-brand-50/50 hover:bg-brand-50 transition-colors group border-l-4 border-l-brand-500">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-brand-700">Day 11</td>
+<td class="p-4">
+<div class="font-medium text-brand-900">通知（替代APP）</div>
+<div class="text-slate-500 text-xs mt-1">ESP32 → 后端 → Telegram Bot</div>
+</td>
+<td class="p-4 text-slate-600">手机收到报警消息</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> Bot Token 和 Chat ID 配置错误。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请配置 Telegram Bot，在接收到报警数据后向指定用户发送通知消息
+                                </div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-slate-700">Day 12</td>
+<td class="p-4">
+<div class="font-medium text-slate-900">参数调优</div>
+<div class="text-slate-500 text-xs mt-1">调 threshold，测试不同动作</div>
+</td>
+<td class="p-4 text-slate-600">误报明显减少</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 避免过度调优陷入局部最优。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请根据实际测试情况调整检测阈值和报警逻辑，降低误报率
+                                </div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-slate-700">Day 13</td>
+<td class="p-4">
+<div class="font-medium text-slate-900">异常处理</div>
+<div class="text-slate-500 text-xs mt-1">Wi-Fi断开重连，HTTP失败重试</div>
+</td>
+<td class="p-4 text-slate-600">网络断了还能恢复</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 重试机制需带延时，避免密集请求。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请实现 Wi-Fi 自动重连和 HTTP 请求失败重试机制，提高系统鲁棒性
+                                </div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="p-4 text-center">
+<label class="cursor-pointer relative flex justify-center items-center">
+<input class="task-checkbox peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 border-2 border-slate-300 rounded-md peer-checked:bg-success peer-checked:border-success transition-all flex items-center justify-center text-white">
+<i class="fa-solid fa-check text-xs opacity-0 peer-checked:opacity-100"></i>
+</div>
+</label>
+</td>
+<td class="p-4 font-bold text-slate-700">Day 14</td>
+<td class="p-4">
+<div class="font-medium text-slate-900">整理 + Demo准备</div>
+<div class="text-slate-500 text-xs mt-1">整理代码，写README，录演示视频</div>
+</td>
+<td class="p-4 text-slate-600">展示：设备 → 检测 → 报警 → 手机</td>
+<td class="p-4 text-warning text-xs">
+<i class="fa-solid fa-triangle-exclamation mr-1"></i> 提前准备演示脚本。
+                            </td>
+<td class="p-4">
+<div class="code-block group-hover:border-brand-400 transition-colors cursor-pointer">
+                                    智能体，请整理代码目录结构，撰写清晰的 README，并录制一段完整功能演示视频
+                                </div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8" id="milestones">
+<h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+<i class="fa-solid fa-map-location-dot text-brand-600"></i> 关键里程碑
+            </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="relative p-6 bg-slate-50 rounded-xl border border-slate-100 hover:shadow-md transition-shadow">
+<div class="absolute -top-3 -left-3 w-10 h-10 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center font-bold border-4 border-white">3</div>
+<h3 class="font-bold text-slate-800 mt-2">HTTP 请求成功</h3>
+<p class="text-sm text-slate-500 mt-2">表明已具备“对外通信”能力，报警链路打通。</p>
+</div>
+<div class="relative p-6 bg-slate-50 rounded-xl border border-slate-100 hover:shadow-md transition-shadow">
+<div class="absolute -top-3 -left-3 w-10 h-10 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center font-bold border-4 border-white">5</div>
+<h3 class="font-bold text-slate-800 mt-2">真实动作触发</h3>
+<p class="text-sm text-slate-500 mt-2">第一次真实动作触发 "ALERT"，感知层开始工作。</p>
+</div>
+<div class="relative p-6 bg-green-50 rounded-xl border border-green-100 hover:shadow-md transition-shadow">
+<div class="absolute -top-3 -left-3 w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold border-4 border-white">6</div>
+<h3 class="font-bold text-green-800 mt-2">核心 MVP 闭环</h3>
+<p class="text-sm text-green-600 mt-2">摇晃 → web收到请求。价值路径验证成功。</p>
+</div>
+<div class="relative p-6 bg-slate-50 rounded-xl border border-slate-100 hover:shadow-md transition-shadow">
+<div class="absolute -top-3 -left-3 w-10 h-10 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center font-bold border-4 border-white">11</div>
+<h3 class="font-bold text-slate-800 mt-2">产品化形态</h3>
+<p class="text-sm text-slate-500 mt-2">手机收到 Telegram 报警通知，从 Demo 升级为产品。</p>
+</div>
+</div>
+</section>
+<section class="bg-red-50 rounded-2xl border border-red-100 p-8 relative overflow-hidden" id="forbidden">
+<div class="absolute top-0 right-0 opacity-5">
+<i class="fa-solid fa-ban text-9xl text-red-600"></i>
+</div>
+<h2 class="text-2xl font-bold text-red-800 mb-6 flex items-center gap-2">
+<i class="fa-solid fa-triangle-exclamation"></i> 禁止事项（绝对不能做的功能）
+            </h2>
+<p class="text-red-700 mb-6 font-medium">否则必崩，这些加一个 = +1~3周</p>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<div class="flex items-center gap-3 bg-white p-4 rounded-lg shadow-sm border border-red-100">
+<i class="fa-solid fa-xmark text-red-500 text-xl"></i>
+<div>
+<div class="font-bold text-slate-800">摄像头（OV2640）</div>
+<div class="text-xs text-slate-500">替代：使用加速度计</div>
+</div>
+</div>
+<div class="flex items-center gap-3 bg-white p-4 rounded-lg shadow-sm border border-red-100">
+<i class="fa-solid fa-xmark text-red-500 text-xl"></i>
+<div>
+<div class="font-bold text-slate-800">TinyML 模型推理</div>
+<div class="text-xs text-slate-500">替代：固定阈值+简单逻辑</div>
+</div>
+</div>
+<div class="flex items-center gap-3 bg-white p-4 rounded-lg shadow-sm border border-red-100">
+<i class="fa-solid fa-xmark text-red-500 text-xl"></i>
+<div>
+<div class="font-bold text-slate-800">BLE 定位/信标</div>
+<div class="text-xs text-slate-500">替代：专注单一传感器</div>
+</div>
+</div>
+<div class="flex items-center gap-3 bg-white p-4 rounded-lg shadow-sm border border-red-100">
+<i class="fa-solid fa-xmark text-red-500 text-xl"></i>
+<div>
+<div class="font-bold text-slate-800">4G 模块联网</div>
+<div class="text-xs text-slate-500">替代：坚持使用 Wi-Fi</div>
+</div>
+</div>
+<div class="flex items-center gap-3 bg-white p-4 rounded-lg shadow-sm border border-red-100">
+<i class="fa-solid fa-xmark text-red-500 text-xl"></i>
+<div>
+<div class="font-bold text-slate-800">自研 App 界面</div>
+<div class="text-xs text-slate-500">替代：使用 Telegram</div>
+</div>
+</div>
+<div class="flex items-center gap-3 bg-white p-4 rounded-lg shadow-sm border border-red-100">
+<i class="fa-solid fa-xmark text-red-500 text-xl"></i>
+<div>
+<div class="font-bold text-slate-800">数据库/登录系统</div>
+<div class="text-xs text-slate-500">替代：内存打印/匿名化</div>
+</div>
+</div>
+</div>
+</section>
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-8" id="summary">
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="p-6 border-b border-slate-100 bg-slate-50">
+<h3 class="font-bold text-slate-900 text-lg">完成标准汇总</h3>
+</div>
+<div class="p-6">
+<ul class="space-y-4">
+<li class="flex items-start gap-3">
+<i class="fa-solid fa-circle-check text-success mt-1"></i>
+<div>
+<span class="font-semibold text-slate-700">功能性</span>
+<p class="text-sm text-slate-500">实现传感器采集、异常检测、报警触发、HTTP发送、远程通知全流程。</p>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<i class="fa-solid fa-circle-check text-success mt-1"></i>
+<div>
+<span class="font-semibold text-slate-700">稳定性</span>
+<p class="text-sm text-slate-500">支持连续运行，具备基本容错能力（如断网重连）。</p>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<i class="fa-solid fa-circle-check text-success mt-1"></i>
+<div>
+<span class="font-semibold text-slate-700">可演示性</span>
+<p class="text-sm text-slate-500">有清晰的操作流程和可视化反馈（日志、通知）。</p>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<i class="fa-solid fa-circle-check text-success mt-1"></i>
+<div>
+<span class="font-semibold text-slate-700">文档化</span>
+<p class="text-sm text-slate-500">包含 README 说明部署方式和使用方法。</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="p-6 border-b border-slate-100 bg-slate-50">
+<h3 class="font-bold text-slate-900 text-lg">避坑点汇总</h3>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-left">
+<thead class="bg-slate-50 text-slate-500 font-medium">
+<tr>
+<th class="p-4">问题类型</th>
+<th class="p-4">应对策略</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr>
+<td class="p-4 text-slate-700">环境搭建失败</td>
+<td class="p-4 text-slate-500">换USB线、重装驱动、管理员权限</td>
+</tr>
+<tr>
+<td class="p-4 text-slate-700">Wi-Fi 连接失败</td>
+<td class="p-4 text-slate-500">改用手机热点</td>
+</tr>
+<tr>
+<td class="p-4 text-slate-700">HTTP 请求失败</td>
+<td class="p-4 text-slate-500">检查URL、关闭SSL验证、用HTTP</td>
+</tr>
+<tr>
+<td class="p-4 text-slate-700">I2C 通信失败</td>
+<td class="p-4 text-slate-500">扫描确认地址、检查接线</td>
+</tr>
+<tr>
+<td class="p-4 text-slate-700">报警误触发</td>
+<td class="p-4 text-slate-500">降低灵敏度、滤波、冷却时间</td>
+</tr>
+<tr>
+<td class="p-4 text-slate-700">内存不足</td>
+<td class="p-4 text-slate-500">减少日志、避免大数组、设堆栈</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section class="space-y-8">
+<div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-lg p-8 text-white">
+<h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+<i class="fa-solid fa-layer-group text-brand-400"></i> 14天后的优先级扩展建议
+                </h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm border border-white/10">
+<div class="text-brand-300 font-bold mb-2">优先级 1</div>
+<div class="font-semibold">音频检测</div>
+<div class="text-sm text-slate-300 mt-1">简单分贝监测，成本低易集成。</div>
+</div>
+<div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm border border-white/10">
+<div class="text-brand-300 font-bold mb-2">优先级 2</div>
+<div class="font-semibold">功耗优化</div>
+<div class="text-sm text-slate-300 mt-1">引入深度睡眠模式，延长续航。</div>
+</div>
+<div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm border border-white/10">
+<div class="text-brand-300 font-bold mb-2">优先级 3</div>
+<div class="font-semibold">TinyML 引入</div>
+<div class="text-sm text-slate-300 mt-1">稳定性基础上尝试轻量级模型。</div>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-white/10 text-sm text-slate-400">
+<i class="fa-solid fa-hourglass-end mr-2"></i> 最后才是：摄像头、BLE定位、4G模块（技术复杂度高，适合后期迭代）。
+                </div>
+</div>
+<div class="text-center py-10">
+<i class="fa-solid fa-quote-left text-4xl text-slate-200 mb-4"></i>
+<h2 class="text-2xl font-bold text-slate-800 mb-4">产品思维总结</h2>
+<p class="text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">
+                    当前路线图本质是从“构建完整系统”转向“验证核心价值”。<br/>
+                    你不需要一个完美的物联网平台，你只需要证明：<br/>
+<span class="font-bold text-brand-600 text-xl">“有人摇了一下，我就知道，并且告诉你了。”</span>
+</p>
+<p class="mt-6 text-slate-500">这个 MVP 已经足够打动用户、投资人或下一步开发者。剩下的，都是锦上添花。</p>
+</div>
+</section>
+</main>
+<footer class="bg-white border-t border-slate-200 py-8 mt-12">
+<div class="max-w-7xl mx-auto px-4 text-center text-slate-400 text-sm">
+<p>© 2026 14天冲刺计划展示页. Generated by AI Assistant.</p>
+</div>
+</footer>
+<script>
+        // --- 1. Mobile Menu Toggle ---
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // --- 2. Toast Notification System ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            // Colors based on type
+            const bgClass = type === 'success' ? 'bg-slate-800' : 'bg-red-600';
+            const iconClass = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 pointer-events-auto toast-enter min-w-[200px]`;
+            toast.innerHTML = `
+                <i class="fa-solid ${iconClass}"></i>
+                <span class="font-medium text-sm">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                toast.addEventListener('animationend', () => {
+                    toast.remove();
+                });
+            }, 3000);
+        }
+
+        // --- 3. Copy to Clipboard Functionality ---
+        function copyToClipboard(element) {
+            const text = element.innerText.trim();
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('提示词已复制到剪贴板');
+            }).catch(err => {
+                showToast('复制失败', 'error');
+            });
+        }
+
+        // --- 4. Task Completion & Confetti Effect ---
+        function handleTaskComplete(checkbox) {
+            if (checkbox.checked) {
+                // Trigger confetti
+                const rect = checkbox.getBoundingClientRect();
+                const x = (rect.left + rect.width / 2) / window.innerWidth;
+                const y = (rect.top + rect.height / 2) / window.innerHeight;
+
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { x: x, y: y },
+                    zIndex: 100,
+                    colors: ['#0ea5e9', '#22c55e', '#f59e0b']
+                });
+
+                showToast('任务完成！继续保持！');
+            }
+        }
+
+        // --- 5. Smooth Scroll & Active Link Highlighting ---
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('nav a[href^="#"]');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - 200)) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('text-brand-600');
+                link.classList.add('text-slate-600');
+                if (link.getAttribute('href').includes(current)) {
+                    link.classList.remove('text-slate-600');
+                    link.classList.add('text-brand-600');
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>

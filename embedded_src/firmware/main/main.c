@@ -20,6 +20,9 @@
 // 引入 QMA7981 姿态传感器驱动
 #include "qma7981.h"
 
+// Wi-Fi 函数声明（在 wifi.c 中定义）
+void wifi_init_sta(void);
+
 // 标签
 static const char *TAG = "BanSafe";
 
@@ -189,7 +192,7 @@ static void alert_handler_task(void *arg)
         );
         
         if (bits & ALERT_TRIGGERED_BIT) {
-            ESP_LOGW(TAG, "🚨 警报已触发！");
+            ESP_LOGW(TAG, "警报已触发！");
             // TODO: 通过 4G 发送警报到云端
             // TODO: 本地蜂鸣器报警
             // TODO: LED 闪烁提示
@@ -233,6 +236,23 @@ static void triple_detection_engine(void *arg)
 }
 
 /**
+ * @brief 初始化 I2C 驱动
+ */
+static esp_err_t init_i2c(void)
+{
+    i2c_config_t conf = {0};
+    conf.mode = I2C_MODE_MASTER;
+    conf.sda_io_num = QMA7981_I2C_SDA_GPIO;
+    conf.scl_io_num = QMA7981_I2C_SCL_GPIO;
+    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+    conf.master.clk_speed = QMA7981_I2C_FREQ;
+    conf.clk_flags = I2C_SCLK_SRC_FLAG_FOR_NOMAL;
+    
+    return i2c_param_config(QMA7981_I2C_NUM, &conf);
+}
+
+/**
  * @brief Arduino 风格初始化函数
  */
 void app_main(void)
@@ -242,6 +262,9 @@ void app_main(void)
     
     // 创建事件组
     s_event_group = xEventGroupCreate();
+    
+    // 初始化 I2C 驱动
+    ESP_ERROR_CHECK(init_i2c());
     
     // I2C 总线扫描，检测所有设备
     i2c_scan();
@@ -257,6 +280,10 @@ void app_main(void)
             ESP_LOGI(TAG, "QMA7981 设备 ID: 0x%02X", device_id);
         }
     }
+    
+    // Day 2 任务：初始化 Wi-Fi
+    ESP_LOGI(TAG, "===== Day 2: 开始 Wi-Fi 连接 =====");
+    wifi_init_sta();
     
     // 创建任务
     xTaskCreate(posture_detection_task, "posture", 4096, NULL, 5, NULL);
